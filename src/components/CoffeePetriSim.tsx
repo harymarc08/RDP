@@ -56,8 +56,8 @@ const ARCS = [
   ["p11", "t13", 1], ["t13", "p1", 1],
   // boucle paiement insuffisant
   ["p3", "t3", 1], ["t3", "p2", 1],
-  // issues vérif stock
-  ["p5", "t7", 1], ["t7", "p11", 1],
+  // issues vérif stock - StockKO retourne vers ChoixBoisson
+  ["p5", "t7", 1], ["t7", "p4", 1],
   // ressources consommées par t6
   ["p12", "t6", 1], ["p13", "t6", 1], ["p14", "t6", 1],
   // annulation
@@ -101,6 +101,25 @@ function isEnabled(tid: TransitionId, marking: Marking, Pre: Matrix): boolean {
     const need = Pre[pid][tid];
     if (need > 0 && (marking[pid] ?? 0) < need) return false;
   }
+  return true;
+}
+
+function isMachineRunning(marking: Marking): boolean {
+  // La machine est considérée comme en cours de fonctionnement si des jetons
+  // sont présents dans les places du processus de préparation
+  const processingPlaces: PlaceId[] = ['p6', 'p7', 'p8', 'p9', 'p10'];
+  return processingPlaces.some(pid => (marking[pid] ?? 0) > 0);
+}
+
+function canStartNewCycle(tid: TransitionId, marking: Marking): boolean {
+  // Transitions qui démarrent un nouveau cycle (jusqu'à la vérification du stock)
+  const startTransitions: TransitionId[] = ['t1', 't2', 't4', 't5'];
+  
+  if (startTransitions.includes(tid)) {
+    return !isMachineRunning(marking);
+  }
+  
+  // Les autres transitions peuvent toujours être exécutées si elles sont activées
   return true;
 }
 
@@ -157,7 +176,10 @@ export default function CoffeePetriSim() {
     setIsMounted(true);
   }, []);
 
-  const enabledTransitions = TRANSITIONS.filter(t => isEnabled(t.id, marking, Pre));
+  const enabledTransitions = TRANSITIONS.filter(t => 
+    isEnabled(t.id, marking, Pre) && canStartNewCycle(t.id, marking)
+  );
+  const machineRunning = isMachineRunning(marking);
 
   const onFire = (tid: TransitionId) => {
     const next = fire(tid, marking, Pre, Post);
@@ -184,9 +206,17 @@ export default function CoffeePetriSim() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900 p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">{/* Agrandissement du conteneur */}
         <header className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Simulateur — Réseau de Petri : Machine à café</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Simulateur — Réseau de Petri : Machine à café</h1>
+            {machineRunning && (
+              <div className="mt-1 flex items-center gap-2 text-orange-600">
+                <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></div>
+                <span className="text-sm font-medium">Machine en cours de fonctionnement</span>
+              </div>
+            )}
+          </div>
           <div className="flex gap-2">
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button 
@@ -203,22 +233,30 @@ export default function CoffeePetriSim() {
               </button>
             </div>
             <button onClick={onReset} className="px-3 py-1.5 rounded-2xl shadow bg-gray-100 hover:bg-gray-200">Reset</button>
-            <button onClick={onRandomStep} className="px-3 py-1.5 rounded-2xl shadow bg-gray-900 text-white hover:bg-black">Étape aléatoire</button>
+            <button 
+              onClick={onRandomStep} 
+              disabled={enabledTransitions.length === 0}
+              className={`px-3 py-1.5 rounded-2xl shadow ${enabledTransitions.length > 0 ? 'bg-gray-900 text-white hover:bg-black' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+            >
+              Étape aléatoire
+            </button>
           </div>
         </header>
 
         {viewMode === 'graph' ? (
-          // Mode Graphe
+          // Mode Graphe - Utilisation maximale de l'espace
           <section className="space-y-6">
             {isMounted ? (
-              <PetriNetGraph
-                places={PLACES}
-                transitions={TRANSITIONS}
-                arcs={ARCS}
-                marking={marking}
-                enabledTransitions={enabledTransitions.map(t => t.id)}
-                onTransitionClick={onFire}
-              />
+              <div className="w-full">
+                <PetriNetGraph
+                  places={PLACES}
+                  transitions={TRANSITIONS}
+                  arcs={ARCS}
+                  marking={marking}
+                  enabledTransitions={enabledTransitions.map(t => t.id)}
+                  onTransitionClick={onFire}
+                />
+              </div>
             ) : (
               <div className="w-full h-96 flex items-center justify-center text-gray-500">
                 Chargement du graphique...
@@ -250,16 +288,22 @@ export default function CoffeePetriSim() {
               <div className="space-y-2">
                 {TRANSITIONS.map(t => {
                   const enabled = isEnabled(t.id, marking, Pre);
+                  const canStart = canStartNewCycle(t.id, marking);
+                  const canFire = enabled && canStart;
+                  
                   return (
-                    <div key={t.id} className={`flex items-center justify-between p-2 rounded-xl border ${enabled ? 'border-green-400 bg-green-50' : 'border-gray-200'}`}>
+                    <div key={t.id} className={`flex items-center justify-between p-2 rounded-xl border ${canFire ? 'border-green-400 bg-green-50' : 'border-gray-200'}`}>
                       <div>
                         <div className="font-medium">{t.label}</div>
                         <div className="text-xs text-gray-500">{t.id}</div>
+                        {enabled && !canStart && (
+                          <div className="text-xs text-orange-600 mt-1">Machine occupée</div>
+                        )}
                       </div>
                       <button
-                        disabled={!enabled}
+                        disabled={!canFire}
                         onClick={() => onFire(t.id)}
-                        className={`px-3 py-1.5 rounded-2xl shadow ${enabled ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                        className={`px-3 py-1.5 rounded-2xl shadow ${canFire ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
                       >
                         Tirer
                       </button>

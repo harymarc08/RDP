@@ -29,69 +29,69 @@ const PetriNetGraph: React.FC<PetriNetGraphProps> = ({
   const [draggedNode, setDraggedNode] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [nodePositions, setNodePositions] = useState<Record<string, NodePosition>>(() => {
-    // Position initiale automatique de haut en bas (flux logique)
+    // Position initiale automatique de haut en bas (flux logique) - utilisation complète de l'espace
     const positions: Record<string, NodePosition> = {};
-    const width = 800;
-    const height = 600;
+    const width = 1200; // Agrandissement pour plus d'espace
+    const height = 1100; // Augmentation de la hauteur
     
-    // Définir les niveaux logiques du flux de la machine à café
+    // Définir les niveaux logiques du flux de la machine à café avec plus d'espacement
     const levels = [
       // Niveau 0: État initial
-      { y: 80, nodes: ['p1'] }, // AttenteClient
+      { y: 60, nodes: ['p1'] }, // AttenteClient
       
       // Niveau 1: Insertion monnaie
-      { y: 140, nodes: ['t1'] }, // InsérerPièce
-      { y: 180, nodes: ['p2'] }, // InsertionMonnaie
+      { y: 120, nodes: ['t1'] }, // InsérerPièce
+      { y: 170, nodes: ['p2'] }, // InsertionMonnaie
       
       // Niveau 2: Vérification paiement
-      { y: 240, nodes: ['t2', 't3'] }, // ValiderMonnaie, PaiementInsuffisant
+      { y: 230, nodes: ['t2', 't3'] }, // ValiderMonnaie, PaiementInsuffisant
       { y: 280, nodes: ['p3'] }, // VérificationPaiement
       
       // Niveau 3: Accès choix
       { y: 340, nodes: ['t4'] }, // AccèsChoixBoisson
-      { y: 380, nodes: ['p4'] }, // ChoixBoisson
+      { y: 390, nodes: ['p4'] }, // ChoixBoisson
       
       // Niveau 4: Choix et vérification stock
-      { y: 440, nodes: ['t5'] }, // ChoisirBoisson
-      { y: 480, nodes: ['p5'] }, // VérificationStock
+      { y: 450, nodes: ['t5'] }, // ChoisirBoisson
+      { y: 500, nodes: ['p5'] }, // VérificationStock
       
       // Niveau 5: Stock (ressources à droite)
-      { y: 480, nodes: ['p12', 'p13', 'p14'] }, // Ressources
-      { y: 540, nodes: ['t6', 't7'] }, // StockOK, StockKO
+      { y: 500, nodes: ['p12', 'p13', 'p14'] }, // Ressources
+      { y: 560, nodes: ['t6', 't7'] }, // StockOK, StockKO
       
       // Niveau 6: Chauffage
-      { y: 580, nodes: ['p6'] }, // EauEnChauffe
-      { y: 620, nodes: ['t8'] }, // LancerChauffe
+      { y: 620, nodes: ['p6'] }, // EauEnChauffe
+      { y: 670, nodes: ['t8'] }, // LancerChauffe
       
       // Niveau 7: Préparation
-      { y: 680, nodes: ['p7'] }, // EauPrête
-      { y: 720, nodes: ['t9'] }, // DémarrerPréparation
-      { y: 760, nodes: ['p8'] }, // PréparationCafé
-      { y: 800, nodes: ['t10'] }, // FinPréparation
+      { y: 720, nodes: ['p7'] }, // EauPrête
+      { y: 770, nodes: ['t9'] }, // DémarrerPréparation
+      { y: 820, nodes: ['p8'] }, // PréparationCafé
+      { y: 870, nodes: ['t10'] }, // FinPréparation
       
       // Niveau 8: Distribution
-      { y: 840, nodes: ['p9'] }, // CaféPrêt
-      { y: 880, nodes: ['t11'] }, // Distribuer
-      { y: 920, nodes: ['p10'] }, // DistributionBoisson
-      { y: 960, nodes: ['t12'] }, // PrendreBoisson
+      { y: 920, nodes: ['p9'] }, // CaféPrêt
+      { y: 970, nodes: ['t11'] }, // Distribuer
+      { y: 1020, nodes: ['p10'] }, // DistributionBoisson
+      { y: 1070, nodes: ['t12'] }, // PrendreBoisson
       
       // Niveau 9: Retour et reset
-      { y: 1000, nodes: ['p11'] }, // RetourAuRepos
-      { y: 1040, nodes: ['t13', 't14'] }, // Reset, Annuler
+      { y: 1120, nodes: ['p11'] }, // RetourAuRepos
+      { y: 1170, nodes: ['t13', 't14'] }, // Reset, Annuler
     ];
     
-    // Placer les nœuds selon les niveaux
+    // Placer les nœuds selon les niveaux avec plus d'espacement
     levels.forEach(level => {
       const nodesAtLevel = level.nodes;
-      const spacing = Math.min(width / (nodesAtLevel.length + 1), 120);
+      const spacing = Math.max(150, width / (nodesAtLevel.length + 2)); // Plus d'espacement
       const startX = (width - (nodesAtLevel.length - 1) * spacing) / 2;
       
       nodesAtLevel.forEach((nodeId, index) => {
-        // Cas spéciaux pour les ressources (les placer à droite)
+        // Cas spéciaux pour les ressources (les placer à droite avec plus d'espacement)
         if (['p12', 'p13', 'p14'].includes(nodeId)) {
           positions[nodeId] = {
             id: nodeId,
-            x: width - 100 - (index * 80),
+            x: width - 150 - (index * 120), // Plus d'espacement pour les ressources
             y: level.y,
           };
         } else {
@@ -185,32 +185,45 @@ const PetriNetGraph: React.FC<PetriNetGraphProps> = ({
 
   return (
     <div className="w-full">
-      <div className="mb-4 flex justify-between items-center">
+      <div className="mb-4 flex justify-between items-center flex-wrap gap-2">
         <h3 className="text-lg font-semibold text-gray-800">
           Réseau de Petri - Machine à Café
         </h3>
-        <button
-          onClick={toggleAnimation}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            isAnimated
-              ? 'bg-red-500 hover:bg-red-600 text-white'
-              : 'bg-green-500 hover:bg-green-600 text-white'
-          }`}
-        >
-          {isAnimated ? 'Immobiliser' : 'Activer déplacement'}
-        </button>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={toggleAnimation}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              isAnimated
+                ? 'bg-red-500 hover:bg-red-600 text-white'
+                : 'bg-green-500 hover:bg-green-600 text-white'
+            }`}
+          >
+            {isAnimated ? 'Immobiliser' : 'Activer déplacement'}
+          </button>
+          <div className="text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded-lg">
+            Utilisation: {isAnimated ? 'Glissez pour déplacer les éléments' : 'Cliquez sur les transitions actives'}
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-lg p-4">
+      <div className="bg-white rounded-lg shadow-lg p-4 overflow-auto max-h-screen">
+        <div className="text-xs text-gray-500 mb-2 text-center">
+          💡 Conseil: Utilisez la molette de la souris pour zoomer, ou faites défiler pour voir tout le graphique
+        </div>
         <svg
           ref={svgRef}
-          width="800"
-          height="1100"
-          className="w-full h-auto border rounded-lg"
-          style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
+          width="1200"
+          height="1300"
+          className="w-full h-auto border rounded-lg min-h-[600px]"
+          style={{ 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            maxWidth: '100%'
+          }}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          viewBox="0 0 1200 1300"
+          preserveAspectRatio="xMidYMid meet"
         >
           {/* Définition des dégradés */}
           <defs>
@@ -500,28 +513,42 @@ const PetriNetGraph: React.FC<PetriNetGraphProps> = ({
                   pointerEvents="none"
                 />
                 
-                {/* Label de la place avec arrière-plan */}
+                {/* Label de la place avec arrière-plan élargi */}
                 <rect
-                  x={pos.x - 35}
+                  x={pos.x - 55}
                   y={pos.y + 35}
-                  width="70"
-                  height="18"
-                  rx="9"
-                  fill="rgba(15, 23, 42, 0.8)"
-                  stroke="rgba(148, 163, 184, 0.5)"
+                  width="110"
+                  height="22"
+                  rx="11"
+                  fill="rgba(15, 23, 42, 0.9)"
+                  stroke="rgba(148, 163, 184, 0.6)"
                   strokeWidth="1"
                 />
                 <text
                   x={pos.x}
-                  y={pos.y + 47}
+                  y={pos.y + 48}
                   textAnchor="middle"
-                  fontSize="10"
+                  fontSize="11"
                   fontWeight="600"
                   fill="#e2e8f0"
                   pointerEvents="none"
-                  fontFamily="Arial, sans-serif"
+                  fontFamily="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
                 >
-                  {place.label.length > 9 ? place.label.substring(0, 9) + '...' : place.label}
+                  {place.label.length > 14 ? place.label.substring(0, 14) + '...' : place.label}
+                </text>
+                
+                {/* ID de la place en dessous */}
+                <text
+                  x={pos.x}
+                  y={pos.y + 65}
+                  textAnchor="middle"
+                  fontSize="9"
+                  fontWeight="400"
+                  fill="rgba(226, 232, 240, 0.7)"
+                  pointerEvents="none"
+                  fontFamily="'Courier New', monospace"
+                >
+                  {place.id}
                 </text>
                 
                 {/* Jetons avec effet 3D */}
@@ -686,28 +713,42 @@ const PetriNetGraph: React.FC<PetriNetGraphProps> = ({
                   pointerEvents="none"
                 />
                 
-                {/* Label de la transition avec arrière-plan */}
+                {/* Label de la transition avec arrière-plan élargi */}
                 <rect
-                  x={pos.x - 40}
+                  x={pos.x - 50}
                   y={pos.y + 28}
-                  width="80"
-                  height="16"
-                  rx="8"
+                  width="100"
+                  height="20"
+                  rx="10"
                   fill="rgba(15, 23, 42, 0.9)"
                   stroke={isEnabled ? "rgba(245, 158, 11, 0.5)" : "rgba(148, 163, 184, 0.3)"}
                   strokeWidth="1"
                 />
                 <text
                   x={pos.x}
-                  y={pos.y + 38}
+                  y={pos.y + 40}
                   textAnchor="middle"
-                  fontSize="9"
+                  fontSize="10"
                   fontWeight="600"
                   fill={isEnabled ? "#fbbf24" : "#cbd5e1"}
                   pointerEvents="none"
-                  fontFamily="Arial, sans-serif"
+                  fontFamily="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
                 >
-                  {transition.label.length > 11 ? transition.label.substring(0, 11) + '...' : transition.label}
+                  {transition.label.length > 15 ? transition.label.substring(0, 15) + '...' : transition.label}
+                </text>
+                
+                {/* ID de la transition en dessous */}
+                <text
+                  x={pos.x}
+                  y={pos.y + 55}
+                  textAnchor="middle"
+                  fontSize="8"
+                  fontWeight="400"
+                  fill="rgba(226, 232, 240, 0.6)"
+                  pointerEvents="none"
+                  fontFamily="'Courier New', monospace"
+                >
+                  {transition.id}
                 </text>
                 
                 {/* Indicateur d'état */}
